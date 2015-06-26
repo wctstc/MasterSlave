@@ -2,26 +2,23 @@
 
 #include "AccessPoint.h"
 #include "ConnectPoint.h"
-#include "OnRecieverInterface.h"
-
+#include <map>
 
 class PointManager : public OnRecieverInterface
 {
 public:
 	PointManager(void);
 	~PointManager(void);
-public:
-	//virtual void OnRecv( string buffer );
 
 public:
-	//void Forword( );
+	int RegisterConnection( string connect_point_name, ConnectPoint * );
+	ConnectPoint *UnRegisterConnection( string connect_point_name );
 
-	void RegistReciever( OnRecieverInterface *reciever, string ip, int port );
-	void RegistReciever( OnRecieverInterface *reciever, ConnectPoint *sender );
-	void UnReginstReciever( OnRecieverInterface *reciever );
+
+	Sender *RegistReciever( OnRecieverInterface *reciever, string connect_point_name );
+	int UnReginstReciever( OnRecieverInterface *reciever, string connect_point_name );
+	int UnReginstReciever( OnRecieverInterface *reciever );
 
 private:
-	//AccessPoint *m_server;
-	map< OnRecieverInterface * , ConnectPoint* > m_client;
-
+	map< string , ConnectPoint* > m_connect_point;
 };

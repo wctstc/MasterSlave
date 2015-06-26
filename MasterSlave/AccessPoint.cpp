@@ -4,7 +4,7 @@
 #include "AccessPoint.h"
 #include "LogManage.h"
 
-AccessPoint::AccessPoint(  ):m_socket_access( SOCKET_ERROR )
+AccessPoint::AccessPoint(  ):m_socket_access( SOCKET_ERROR ),m_start( 0 )
 {
 }
 
@@ -16,11 +16,8 @@ AccessPoint::~AccessPoint(void)
 	}
 }
 
-int AccessPoint::Start( OnRecieverInterface *reciever,int port, string ip  )
+int AccessPoint::Start( int port, string ip  )
 {
-	if( reciever == NULL )
-		return 0;
-	m_reciever = reciever;
 
 	if( m_socket_access != SOCKET_ERROR )
 	{
@@ -69,22 +66,20 @@ int AccessPoint::Start( OnRecieverInterface *reciever,int port, string ip  )
 	}
 
 	CLog( "绑定[%d]端口", port );
-	Thread::CreateThread( &m_access_thread, OnAccept, this );
+	
+	m_start = 1;
+	Thread::CreateThread( &m_access_thread, Accept, this );
 
 	return 0;
 }
 
-ConnectPoint * AccessPoint::GetLastConnectPoint()
-{
-	if( m_client.empty() == true )
-	{
-		return NULL;}
-	else
-	{
-		return m_client[m_client.size()-1];
-	}
-}
 
+int AccessPoint::Stop()
+{
+	m_start = false;
+	closesocket( m_socket_access );
+	
+}
 
 int AccessPoint::SendContent(unsigned int socket, string &content)
 {
@@ -109,7 +104,7 @@ int AccessPoint::SendBroadcast( string &broadcast)
 	return num;
 }
 
-void *AccessPoint::OnAccept( void *bind )
+void *AccessPoint::Accept( void *bind )
 {
 
 	struct sockaddr_in stPeerAddr;
@@ -118,11 +113,11 @@ void *AccessPoint::OnAccept( void *bind )
 
 	AccessPoint *access_point = ( AccessPoint * ) bind;
 
-	while( true )
+	while( m_start )
 	{
 		//接收连接点
 		unsigned int accept_socket = accept( access_point->m_socket_access,reinterpret_cast<sockaddr*>(&stPeerAddr),&nAddrLen);
-		if ( INVALID_SOCKET == accept_socket )
+		if ( SOCKET_ERROR == accept_socket )
 			return NULL;
 		
 		//创建连接点
@@ -150,7 +145,7 @@ void *AccessPoint::OnAccept( void *bind )
 
 		connect_point->Init( accept_socket, true, false, local_ip, local_port, peer_ip, peer_port, access_point->m_reciever );
 
-		access_point->m_client.push_back( connect_point );
+		OnAccept( connect_point );
 
 		//打印日志
 		CLog( "收到来自%s:%d连接", peer_ip.c_str(), peer_port );

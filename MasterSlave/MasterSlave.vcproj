@@ -154,12 +154,20 @@
 				RelativePath=".\main.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ServicePoint.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\ServicePoint.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -210,10 +218,6 @@
 				RelativePath=".\MasterSlave.h"
 				>
 			</File>
-			<File
-				RelativePath=".\OnRecieverInterface.h"
-				>
-			</File>
 			<Filter
 				Name="Base"
 				>
@@ -234,11 +238,39 @@
 					>
 				</File>
 				<File
+					RelativePath=".\Forworder.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Forworder.h"
+					>
+				</File>
+				<File
+					RelativePath=".\OnRecieverInterface.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Packet.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Packet.h"
+					>
+				</File>
+				<File
 					RelativePath=".\PointManager.cpp"
 					>
 				</File>
 				<File
 					RelativePath=".\PointManager.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Sender.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Sender.h"
 					>
 				</File>
 				<File

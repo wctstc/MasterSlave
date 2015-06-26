@@ -14,20 +14,16 @@ public:
 	AccessPoint(void);
 	~AccessPoint(void);
 public:
-	int Start( OnRecieverInterface *reciever, int port, string ip = ""  );
-	virtual int SendContent( unsigned int socket, string &content );
-	virtual int SendBroadcast( string &broadcast );
+	int Start( int port, string ip = ""  );
+	int Stop();
+
+	int Broadcast( string buffer );
+public:
+	void OnAccept( ConnectPoint *connect_point ) = 0;
 private:
-	static void *OnAccept( void *bind );
+	static void *Accept( void *bind );
 private:
-	string m_ip;
-	int m_port;
 	unsigned int m_socket_access;
-
-
-	OnRecieverInterface *m_reciever;
-
-private:
 	pthread_t m_access_thread;
-	vector< ConnectPoint * > m_client;
+	int m_start;
 };

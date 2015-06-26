@@ -8,15 +8,16 @@
 int ConnectPoint::m_ID_Distribution = 0;
 
 ConnectPoint::ConnectPoint( OnRecieverInterface *reciever ):m_local_ip( "0.0.0.0" ), m_local_port( 0 ),
-															m_peer_ip( "0.0.0.0" ), m_peer_port( 0 ),
-															m_socket( SOCKET_ERROR ),
-															m_is_connect( false ),
-															m_direction( true ),
-															m_reciever( reciever )
+																	m_peer_ip( "0.0.0.0" ), m_peer_port( 0 ),
+																	m_socket( SOCKET_ERROR ),
+																	m_is_connect( false ),
+																	m_direction( true ),
+																	m_reciever( reciever )
 
 {
 	m_connect_point_id = ++m_ID_Distribution;
-	CLog( "编号[%d]连接点，构造", m_connect_point_id );
+
+	CLog( "编号[%d]连接点，构造",m_connect_point_id );
 }
 
 ConnectPoint::~ConnectPoint(void)
@@ -36,35 +37,37 @@ void ConnectPoint::Init(int socket, int is_connect, int direction, string local_
 	m_local_ip   = local_ip;
 	m_local_port = local_port;
 	m_peer_ip    = peer_ip;
-	m_peer_port  = peer_port;
+	m_peer_port  = peer_port;	
 	m_reciever   = reciever;
 
 	Thread::KillThread( &m_pthread_id );
 	Thread::CreateThread( &m_pthread_id, OnRecvBuffer, this );
 
-	CLog( "编号[%d]连接点,初始化:本端地址[%s,%d],对端地址[%s,%d],套接字[%d],连接方向[%d],连接状态[%d]", 
+	CLog( "编号[%d]连接点,初始化:本端地址[%s,%d],对端地址[%s,%d],套接字[%d],连接方向[%d],连接状态[%d], 接收者个数[%d]", 
 			m_connect_point_id,               //编号
 			m_local_ip.c_str(), m_local_port, //本端地址
 			m_peer_ip.c_str(),  m_peer_port,  //对端地址
 			m_socket,                         //套接字
 			m_direction,                      //连接方向
-			m_is_connect );                   //连接状态
+			m_is_connect                      //连接状态
+			m_reciever.size() );              //接收者个数
 }
 
 
-int ConnectPoint::Start(string ip, int port, int time_out)
+int ConnectPoint::Start( int reconnect, string ip, int port, int time_out )
 {
 	m_direction = 1;
 	m_peer_ip   = ip;
 	m_peer_port = port;
 
-	return Start( time_out );
+	return Start( reconnect, time_out );
 }
 
-int ConnectPoint::Start(int time_out)
+int ConnectPoint::Start( int reconnect, int time_out)
 {
 
 	m_direction = 1;
+	m_reconnect = reconnect;
 
 	if( m_socket != SOCKET_ERROR )
 	{
@@ -188,9 +191,16 @@ int ConnectPoint::SendBuffer( string &buffer, int time_out )
 	return 0;
 }
 
-int ConnectPoint::RegisterReciever(OnRecieverInterface *reciever)
+int ConnectPoint::BindReciever(OnRecieverInterface *reciever)
 {
-	m_reciever = reciever;
+	if( reciever != NULL )
+	{
+		m_reciever = reciever;
+	}
+	else
+	{
+		return 0;
+	}
 	return 1;
 }
 
@@ -229,11 +239,123 @@ int ConnectPoint::IsConnect()
 	return m_is_connect;
 }
 
+
+int ConnectPoint::GetReconnect()
+{
+	return m_reconnect;
+}
+
+
+int ConnectPoint::SetReconnect( int reconnect )
+{
+	m_reconnect = reconnect;
+}
+
+Sender * ConnectPoint::GetSender()
+{
+	return &m_sender;
+}
+
 int ConnectPoint::GetDirection()
 {
 	return m_direction;
 }
 
+
+int ConnectPoint::Reconnect()
+{
+	if( m_socket != SOCKET_ERROR )
+	{
+		closesocket( m_socket );
+		m_socket = SOCKET_ERROR;
+	}
+
+
+	//创建socket
+	m_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if( SOCKET_ERROR == m_socket )
+	{	
+		WSADATA wsaData;
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
+		m_socket = socket(AF_INET, SOCK_STREAM, 0); 
+		if( SOCKET_ERROR == m_socket )
+		{
+			CLog( "%s","Error at Connect socket()" );
+			return -1;
+		}
+	}
+
+
+
+
+	//设置socket为非阻塞
+	unsigned long mode = 1;
+	int result = ioctlsocket( m_socket, FIONBIO, &mode);
+
+
+	//创建连接
+	sockaddr_in addrServer; 
+	addrServer.sin_family = AF_INET;
+	addrServer.sin_addr.s_addr = inet_addr( m_peer_ip.c_str());
+	addrServer.sin_port = htons( m_peer_port );
+
+
+	for( int n = 1;; n++ )
+	{
+		connect( m_socket, (struct sockaddr*) &addrServer, sizeof(addrServer) );
+
+		//异步等待连接成功
+		fd_set write, err;
+		FD_ZERO(&write);
+		FD_ZERO(&err);
+		FD_SET(m_socket, &write);
+		FD_SET(m_socket, &err);
+
+
+		TIMEVAL timeval;
+		timeval.tv_sec  = 5;
+		timeval.tv_usec = 0;
+		select(0, NULL, &write, &err, &timeval);
+
+		if( FD_ISSET(m_socket, &write) > 0 )
+		{
+			//获取本地信息
+			struct sockaddr_in local_address;
+			int len = sizeof( local_address );
+			getsockname( m_socket,(struct sockaddr *)&local_address,&len );
+
+			m_local_ip   = inet_ntoa( local_address.sin_addr);
+			m_local_port = ntohs( local_address.sin_port );
+
+			//连接状态改变
+			m_is_connect = 1;
+			CLog( "编号[%d]连接点,连接成功:本端地址[%s,%d],对端地址[%s,%d],套接字[%d],连接方向[%d],连接状态[%d]", 
+				m_connect_point_id,               //编号
+				m_local_ip.c_str(), m_local_port, //本端地址
+				m_peer_ip.c_str(),  m_peer_port,  //对端地址
+				m_socket,                         //套接字
+				m_direction,                      //连接方向
+				m_is_connect );                   //连接状态
+
+			Thread::KillThread( &m_pthread_id );
+			Thread::CreateThread( &m_pthread_id, OnRecvBuffer, this );
+
+			return 1;
+		}
+		CLog( "编号[%d]连接点,连接失败:本端地址[%s,%d],对端地址[%s,%d],套接字[%d],连接方向[%d],连接状态[%d],第[%d]次尝试重连", 
+			m_connect_point_id,               //编号
+			m_local_ip.c_str(), m_local_port, //本端地址
+			m_peer_ip.c_str(),  m_peer_port,  //对端地址
+			m_socket,                         //套接字
+			m_direction,                      //连接方向
+			m_is_connect                      //连接状态
+			n );                              //第n次尝试重连
+
+		if( m_reconnect == 0 )
+			break;
+	}
+	return 0;
+}
 
 void * ConnectPoint::OnRecvBuffer(void *arg)
 {
@@ -246,8 +368,9 @@ void * ConnectPoint::OnRecvBuffer(void *arg)
 
 		if( connect_point->m_socket == SOCKET_ERROR || connect_point->m_is_connect == false )
 		{
-			//重连
-			//return 0;
+			if( m_reconnect == true )
+				if( Reconnect() <= 0 )
+					return NULL;
 		}
 
 		//读取标志创建
@@ -283,18 +406,36 @@ void * ConnectPoint::OnRecvBuffer(void *arg)
 						connect_point->m_direction,                      //连接方向
 						connect_point->m_is_connect );                   //连接状态
 
-					//重连
+					if( m_reconnect == true )
+						if( Reconnect() <= 0 )
+							return NULL;
 				}
 				if( length < 100 )
 					break;
 			} 
 			while (true);
 
+			if( buffer<= 0 && buffer.empty() )
+			{
+				if( m_reconnect == 1)
+				{
+					Start()
+				}
+			}
+
 			CLog( "编号[%d]连接点,接收数据：%s", buffer.c_str() );
 
-			if( connect_point->m_reciever != NULL )
+			if( connect_point->m_reciever.empty() != true )
 			{
-				connect_point->m_reciever->OnRecv( buffer );
+				vector< OnRecieverInterface * >::iterator vecIt = connect_point->m_reciever.begin();
+
+				for( ; vecIt != connect_point->m_reciever.end(); vecIt++ )
+				{
+					if( (*vecIt) != NULL )
+					{
+						(*vecIt)->OnRecv( buffer, this );
+					}
+				}
 			}
 		}
 	}

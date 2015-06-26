@@ -8,28 +8,68 @@ PointManager::~PointManager(void)
 {
 }
 
-void PointManager::OnRecv(string buffer)
-{
 
+void PointManager::RegisterConnection(string connect_point_name, ConnectPoint *connect_point)
+{
+	map< string, ConnectPoint *>::iterator mapIt = m_connect_point.find( connect_point_name );
+	if( mapIt == m_connect_point.end() )
+	{
+		m_connect_point.insert( connect_point_name, connect_point );
+		return 1;
+	}
+	return 0;
 }
 
-void PointManager::RegistReciever( OnRecieverInterface *reciever, string ip, int port)
+
+ConnectPoint *PointManager::UnRegisterConnection(string connect_point_name)
 {
-	map< OnRecieverInterface * , ConnectPoint * >::iterator map_it = m_client.find( reciever );
-	if( map_it != m_client.end() )
+	map< string, ConnectPoint * >::iterator mapIt = m_connect_point.find( connect_point_name );
+	ConnectPoint *connect_point;
+	if( mapIt != m_connect_point.end() )
 	{
-		delete map_it->second;
-		map_it->second = NULL;
+		connect_point = (*mapIt);
+		m_connect_point.erase( mapIt );
+		return connect_point;
+	}
+	return NULL;
+}
+
+Sender * PointManager::RegistReciever(OnRecieverInterface *reciever, string connect_point_name)
+{
+	map< string, ConnectPoint * >::iterator mapIt = m_connect_point.find( connect_point_name );
+
+	if( mapIt != m_connect_point.end() )
+	{
+		if( 0 != mapIt->second->RegisterReciever( reciever ) )
+		{
+			return mapIt->second->GetSender();
+		}
 	}
 
-
-	ConnectPoint *connect_point = new ConnectPoint( reciever );
-	connect_point->Start( ip, port );
-
-	m_client[reciever] = connect_point;
+	return NULL;
 }
 
-void PointManager::RegistReciever(OnRecieverInterface *reciever, ConnectPoint *sender)
+int PointManager::UnReginstReciever(OnRecieverInterface *reciever, string connect_point_name )
 {
-	m_client[reciever] = sender;
+	map< string , ConnectPoint * >::iterator mapIt = m_connect_point.find( connect_point_name );
+
+	if( mapIt != m_connect_point.end() )
+	{
+		(*mapIt)->second.UnRegisterReciever( reciever );
+		return 1;
+	}
+	return 0;
+}
+
+int PointManager::UnReginstReciever(OnRecieverInterface *reciever)
+{
+	int count = 0;
+
+	map< string, ConnectPoint * >::iterator mapIt = m_connect_point.begin();
+
+	for( ; mapIt != m_connect_point.end(); mapIt++ )
+	{
+		count += (*mapIt)->second->UnRegisterReciever( reciever );
+	}
+	return count;
 }

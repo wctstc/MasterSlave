@@ -1,5 +1,7 @@
 #pragma once
+
 #include <string>
+#include "Packet.h"
 using namespace std;
 
 class OnRecieverInterface
@@ -15,5 +17,6 @@ public:
 	}
 
 public:
-	virtual void OnRecv( string buffer ) = 0;
+	virtual void OnRecv( Packet packet ) = 0;
+	virtual void OnClose( ) = 0;
 };

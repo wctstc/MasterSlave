@@ -81,7 +81,7 @@ int MasterSlave::Start()
 
 void MasterSlave::OnRecieve(string buffer)
 {
-
+	m_point_manager
 }
 
 
@@ -126,8 +126,8 @@ void* MasterSlave::OnRecieve(void *parent)
 
 		connect_point = master_slave->m_other_service[i];
 
-		if( connect_point->OnRecvBuffer( buffer, 1 ) > 0 )
-			master_slave->OnRecieve( buffer );
+		//if( connect_point->OnRecvBuffer( buffer, 1 ) > 0 )
+		//	master_slave->OnRecieve( buffer );
 
 	}
 }
