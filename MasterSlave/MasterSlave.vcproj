@@ -238,14 +238,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\Forworder.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Forworder.h"
-					>
-				</File>
-				<File
 					RelativePath=".\OnRecieverInterface.h"
 					>
 				</File>
@@ -282,7 +274,35 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="ClinetBase"
+				>
+				<File
+					RelativePath=".\ClientPoint.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ClientPoint.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Forworder.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Forworder.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="ServerBase"
+				>
+			</Filter>
 		</Filter>
+		<File
+			RelativePath="..\..\..\MasterSlaveClone\MasterSlaveTest\MasterSlave.vcproj"
+			>
+		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

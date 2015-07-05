@@ -31,18 +31,110 @@ void Forworder::Forword(string content)
 
 void Forworder::Forword(Packet packet)
 {
-	vector< Sender * > &senders = m_senders.find( ID )->second;
-	if( senders.empty() == false )
+	string ID = packet.GetID();
+
+	if( ID.empty() == false )
 	{
-		vector< Sender * >::iterator it_vec = senders.begin();
-
-		for( ; it_vec != senders.end(); it_vec++ )
+		vector< Sender * > &senders = m_senders.find( ID )->second;
+		if( senders.empty() == false )
 		{
-			string content;
+			vector< Sender * >::iterator it_vec = senders.begin();
 
-			Struct2String( content, packet );
+			for( ; it_vec != senders.end(); it_vec++ )
+			{
+				string content;
 
-			packet.GetSender()->SendContent( content );
+				Struct2String( content, packet );
+
+				(*it_vec)->SendContent( content );
+			}
+		}
+		else
+		{
+			//error
 		}
 	}
+	else
+	{
+		string content;
+		Struct2String( content , packet );
+		packet.GetSender()->SendContent( content );
+	}
+}
+
+int Forworder::Register(string ID, OnRecieverInterface *reciever)
+{
+	vector< OnRecieverInterface * > &tmp_recievers = m_recievers.find( ID )->second;
+	vector< OnRecieverInterface * >::iterator it_vec = tmp_recievers.begin();
+
+	for( ; it_vec != tmp_recievers.end(); it_vec++ )
+	{
+		if( (*it_vec) == reciever )
+			break;
+	}
+	if( it_vec == tmp_recievers.end() )
+	{
+		tmp_recievers.push_back( reciever );
+		return 1;
+	}
+	return 0;
+}
+
+int Forworder::Register(string ID, Sender *sender)
+{
+	vector< Sender * > &tmp_senders = m_senders.find( ID )->second;
+	vector< Sender * >::iterator it_vec = tmp_senders.begin();
+
+	for( ; it_vec != tmp_senders.end(); it_vec++ )
+	{
+		if( (*it_vec) == sender )
+			break;
+	}
+	if( it_vec == tmp_senders.end() )
+	{
+		tmp_senders.push_back( sender );
+		return 1;
+	}
+	return 0;
+}
+
+int Forworder::UnRegister(string ID, OnRecieverInterface *reciever)
+{
+	vector< OnRecieverInterface * > &tmp_recievers = m_recievers.find( ID )->second;
+	vector< OnRecieverInterface * >::iterator it_vec = tmp_recievers.begin();
+
+	for( ; it_vec != tmp_recievers.end(); it_vec++ )
+	{
+		if( (*it_vec) == reciever )
+			break;
+	}
+	if( it_vec != tmp_recievers.end() )
+	{
+		tmp_recievers.erase( it_vec );
+		return 1;
+	}
+	return 0;
+}
+
+int Forworder::UnRegister(string ID, Sender *sender)
+{	
+	vector< Sender * > &tmp_senders = m_senders.find( ID )->second;
+	vector< Sender * >::iterator it_vec = tmp_senders.begin();
+
+	for( ; it_vec != tmp_senders.end(); it_vec++ )
+	{
+		if( (*it_vec) == sender )
+			break;
+	}
+	if( it_vec != tmp_senders.end() )
+	{
+		tmp_senders.erase( it_vec );
+		return 1;
+	}
+	return 0;
+}
+
+std::string Forworder::GetIDFromContent(string content)
+{
+	content.substr( 0, content.get )
 }

@@ -1,28 +1,46 @@
 #include "Packet.h"
 
-Packet::Packet(void):m_ID(""),m_content(""),m_sender(NULL),m_reciever(NULL)
+Packet::Packet(void):m_ID(""),m_point( NULL )
 {
 }
 
-Packet::Packet( string ID, string content, Sender *sender):m_ID(ID),m_content(content),m_sender(sender),m_reciever(NULL)
+Packet::Packet( string content, ConnectPoint *point ):m_point(point)
 {
+	Decode( content );
+	StringToStruct( content );
 }
 
 Packet::~Packet(void)
 {
+	if( m_point != NULL )
+		m_point = NULL;
 }
 
-string Packet::GetContent()
+
+
+void Packet::StringToStruct(string &content)
 {
-	return m_content
+	m_ID = content.substr( 0, content.find_first_not_of( " " ) );
+	content = content.substr( m_ID.length() );
 }
 
-void Packet::SetContent( string content )
+void Packet::StructToString(string &content)
 {
-	m_content = content;
+	content.append( m_ID );
+	content.append( " " );
 }
 
-string Packet::GetID()
+void Packet::Encode(string &content)
+{
+
+}
+
+void Packet::Decode(string &content)
+{
+
+}
+
+std::string Packet::GetID()
 {
 	return m_ID;
 }
@@ -32,14 +50,17 @@ void Packet::SetID(string ID)
 	m_ID = ID;
 }
 
-Sender * Packet::GetSender()
-{
-	return m_sender;
 
+
+ConnectPoint * Packet::GetPoint()
+{
+	return m_point;
 }
 
-OnRecieverInterface * Packet::GetReciever()
+string Packet::ToString( string &content )
 {
-	return m_reciever;
-}
+	StructToString( content );
+	Encode( content );
 
+	return content;
+}
